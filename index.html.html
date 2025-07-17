@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script src="https://unpkg.com/tabletop@1.5.1/tabletop.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; background: #fff; }
+    .search-bar input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .category {
+      margin-bottom: 25px;
+    }
+    .category h2 {
+      font-size: 20px;
+      background: #f0f0f0;
+      padding: 10px 15px;
+      margin: 0;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .exam-list {
+      display: none;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 15px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 10px;
+      background: #fafafa;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: scale(1.02);
+    }
+    .exam-name {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .price {
+      color: #007B83;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="search-bar">
+    <input type="text" id="search" placeholder="🔍 Buscar examen...">
+  </div>
+
+  <div id="content"></div>
+
+  <script>
+    const spreadsheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTqZm2pY1bFSkCWvuf9ITZ7DqnrnkMkGtvTwJhz7HFy-4NHMKzKfGsjV7OEiRWVVrPG-bG9rhrFwMNc/pub?output=csv';
+
+    function groupByCategory(data) {
+      const grouped = {};
+      data.forEach(row => {
+        const cat = row['Categoría'].trim();
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push({ nombre: row['Examen'], precio: row['Precio'] });
+      });
+      return grouped;
+    }
+
+    function renderData(data) {
+      const grouped = groupByCategory(data);
+      const container = document.getElementById('content');
+      container.innerHTML = '';
+
+      for (const categoria in grouped) {
+        const section = document.createElement('div');
+        section.className = 'category';
+
+        const header = document.createElement('h2');
+        header.textContent = '📂 ' + categoria;
+        header.onclick = () => {
+          const list = header.nextElementSibling;
+          list.style.display = list.style.display === 'grid' ? 'none' : 'grid';
+        };
+
+        const list = document.createElement('div');
+        list.className = 'exam-list';
+
+        grouped[categoria].forEach(exam => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="exam-name">${exam.nombre}</div>
+            <div class="price">${exam.price}</div>
+          `;
+          list.appendChild(card);
+        });
+
+        section.appendChild(header);
+        section.appendChild(list);
+        container.appendChild(section);
+      }
+
+      document.getElementById('search').addEventListener('input', function () {
+        const filter = this.value.toLowerCase();
+        document.querySelectorAll('.card').forEach(card => {
+          const text = card.textContent.toLowerCase();
+          card.style.display = text.includes(filter) ? 'block' : 'none';
+        });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      Tabletop.init({
+        key: spreadsheetURL,
+        simpleSheet: true,
+        callback: renderData
+      });
+    });
+  </script>
+
+</body>
+</html>
